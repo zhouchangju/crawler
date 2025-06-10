@@ -3,3 +3,7 @@
 config.ini
 */__pycache__
 pacific-vis/titles.json
+**/*.pdf
+.DS_Store
+pacific-vis/PVIS-2025-Technical-Sessions.json
+QS-world-university-rankings/untranslated_universities.txt

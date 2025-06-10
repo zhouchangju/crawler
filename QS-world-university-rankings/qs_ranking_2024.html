@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2024年QS世界大学排名</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .stats {
+            margin-top: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .results-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 1px;
+            background: #f0f0f0;
+        }
+
+        .university-card {
+            background: white;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 60px 80px 1fr auto auto auto;
+            gap: 15px;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .university-card:hover {
+            background-color: #f8f9ff;
+        }
+
+        .rank {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e0e0e0;
+        }
+
+        .university-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .university-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .score {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #28a745;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .domestic-rank {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #dc3545;
+            padding: 6px 10px;
+            background: #fff5f5;
+            border-radius: 6px;
+            text-align: center;
+            min-width: 70px;
+            border: 1px solid #fecaca;
+        }
+
+        .no-results {
+            padding: 60px 20px;
+            text-align: center;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .university-card {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .rank, .score, .domestic-rank {
+                justify-self: center;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        .error {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 2024年QS世界大学排名</h1>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-box" placeholder="输入大学中文名称（支持模糊搜索）...">
+            <div class="stats" id="stats">正在加载数据...</div>
+        </div>
+
+        <div class="results-container">
+            <div class="results-header">
+                <span id="resultsTitle">大学排名列表</span>
+            </div>
+            <div class="results-grid" id="resultsGrid">
+                <div class="loading">正在加载数据，请稍候...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let universities = [];
+        let filteredUniversities = [];
+
+        // 计算国内排名（只计算大陆大学，排除港台澳）
+        function calculateDomesticRanks(universities) {
+            // 需要排除的港台澳大学名单
+            const excludedUniversities = [
+                // 香港大学
+                "香港大学", "香港科技大学", "香港中文大学", "香港城市大学", 
+                "香港理工大学", "香港浸会大学", "香港岭南大学",
+                
+                // 台湾大学  
+                "国立台湾大学", "国立清华大学", "国立成功大学", "国立阳明交通大学",
+                "国立台湾科技大学", "国立台湾师范大学", "台北医学大学", "国立中山大学",
+                "国立台北科技大学", "长庚大学", "国立中央大学", "国立政治大学",
+                "国立中兴大学", "国立中正大学", "长荣大学", "中原大学", "逢甲大学",
+                "辅仁大学", "国立东华大学", "国立台湾海洋大学", "元智大学", 
+                "国立台北大学", "东吴大学", "淡江大学", "东海大学", "台湾国立交通大学",
+                "台湾国立阳明大学", "台湾高雄医学大学", "台湾朝阳科技大学", "台湾亚洲大学",
+                
+                // 澳门大学
+                "澳门大学", "澳门科技大学"
+            ];
+
+            // 过滤掉港台澳大学，只保留大陆大学
+            const mainlandUniversities = universities.filter(uni => 
+                !excludedUniversities.includes(uni.name)
+            );
+
+            // 按QS排名排序
+            const sortedUniversities = mainlandUniversities.sort((a, b) => {
+                const rankA = parseInt(a.rank) || 9999;
+                const rankB = parseInt(b.rank) || 9999;
+                return rankA - rankB;
+            });
+
+            // 分配国内排名（只给大陆大学）
+            const domesticRankMap = new Map();
+            sortedUniversities.forEach((uni, index) => {
+                domesticRankMap.set(uni.name, index + 1);
+            });
+
+            return domesticRankMap;
+        }
+
+        // 加载数据
+        async function loadData() {
+            try {
+                const response = await fetch('data/display/rank.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // 筛选2024年的数据
+                universities = data.filter(item => item.date === '2024');
+                
+                // 按排名排序
+                universities.sort((a, b) => {
+                    const rankA = parseInt(a.rank) || 9999;
+                    const rankB = parseInt(b.rank) || 9999;
+                    return rankA - rankB;
+                });
+
+                // 计算国内排名
+                const domesticRanks = calculateDomesticRanks(universities);
+                
+                // 为每个大学添加国内排名
+                universities.forEach(uni => {
+                    uni.domesticRank = domesticRanks.get(uni.name);
+                });
+
+                filteredUniversities = [...universities];
+                updateStats();
+                renderUniversities();
+                
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                document.getElementById('resultsGrid').innerHTML = `
+                    <div class="error">
+                        加载数据失败：${error.message}<br>
+                        请确保 data/display/rank.json 文件存在且可访问。
+                    </div>
+                `;
+                document.getElementById('stats').textContent = '数据加载失败';
+            }
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const total = universities.length;
+            const showing = filteredUniversities.length;
+            const statsEl = document.getElementById('stats');
+            
+            if (total === showing) {
+                statsEl.textContent = `共找到 ${total} 所大学`;
+            } else {
+                statsEl.textContent = `显示 ${showing} / ${total} 所大学`;
+            }
+        }
+
+        // 渲染大学列表
+        function renderUniversities() {
+            const resultsGrid = document.getElementById('resultsGrid');
+            const resultsTitle = document.getElementById('resultsTitle');
+            
+            if (filteredUniversities.length === 0) {
+                resultsGrid.innerHTML = '<div class="no-results">未找到匹配的大学</div>';
+                resultsTitle.textContent = '搜索结果';
+                return;
+            }
+
+            resultsTitle.textContent = '大学排名列表';
+            
+            const html = filteredUniversities.map(university => {
+                const logoUrl = university.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23f0f0f0"/><text x="30" y="35" text-anchor="middle" fill="%23999" font-size="12">Logo</text></svg>';
+                const domesticRankHtml = university.domesticRank ? 
+                    `<div class="domestic-rank">国内${university.domesticRank}</div>` : 
+                    '<div class="domestic-rank">-</div>';
+                
+                return `
+                    <div class="university-card">
+                        <div class="rank">${university.rank}</div>
+                        <img src="${logoUrl}" alt="${university.name}" class="logo" 
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot;><rect width=&quot;60&quot; height=&quot;60&quot; fill=&quot;%23f0f0f0&quot;/><text x=&quot;30&quot; y=&quot;35&quot; text-anchor=&quot;middle&quot; fill=&quot;%23999&quot; font-size=&quot;12&quot;>Logo</text></svg>'">
+                        <div class="university-info">
+                            <div class="university-name">${university.name}</div>
+                        </div>
+                        ${domesticRankHtml}
+                        <div class="score">${university.value || 'N/A'}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            resultsGrid.innerHTML = html;
+        }
+
+        // 搜索功能
+        function searchUniversities(query) {
+            if (!query.trim()) {
+                filteredUniversities = [...universities];
+            } else {
+                const searchTerm = query.toLowerCase().trim();
+                filteredUniversities = universities.filter(university => 
+                    university.name.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            updateStats();
+            renderUniversities();
+        }
+
+        // 事件监听
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchUniversities(e.target.value);
+        });
+
+        // 初始化
+        loadData();
+    </script>
+</body>
+</html> 
